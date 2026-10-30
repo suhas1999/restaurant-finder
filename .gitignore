@@ -7,3 +7,4 @@ scraper_log.txt
 .wrangler/
 worker/.wrangler/
 node_modules/
+add_password.txt

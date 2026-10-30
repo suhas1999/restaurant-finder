@@ -1,8 +1,15 @@
 // Gatekeeper between the public website and GitHub Actions.
 // Holds the GitHub token (secret GH_TOKEN) so the page never sees it, and enforces:
-// valid town names, no duplicates, one run at a time, and DAILY_LIMIT new towns per 24 hours.
+// the ADD_PASSWORD secret, valid town names, no duplicates, one run at a time, and DAILY_LIMIT new towns per 24 hours.
 
 const WORKFLOW = "add-town.yml";
+
+// Compare SHA-256 digests in constant time so response timing doesn't leak the password
+async function samePassword(given, expected) {
+  if (!expected) return false;
+  const hash = async s => new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)));
+  return crypto.subtle.timingSafeEqual(await hash(String(given)), await hash(expected));
+}
 
 export default {
   async fetch(request, env) {
@@ -31,7 +38,9 @@ export default {
     const url = new URL(request.url);
     try {
       if (request.method === "POST" && url.pathname === "/add") {
-        const { town: raw = "" } = await request.json();
+        const { town: raw = "", password = "" } = await request.json();
+        if (!(await samePassword(password, env.ADD_PASSWORD)))
+          return reply({ error: "Wrong password", badPassword: true }, 401);
         if (!/^[A-Za-z][A-Za-z .'-]{1,39}$/.test(raw.trim()))
           return reply({ error: "Please type just the town name in English letters, e.g. Tanuku" }, 400);
         const town = raw.trim().split(/\s+/).map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(" ");

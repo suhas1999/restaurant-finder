@@ -88,7 +88,8 @@ def main():
         HEAD.format(title="Restaurant Finder", css=CSS)
         + '<header><h1>🍽️ Restaurant Finder</h1><p>Find the best restaurants in any town</p></header>'
         + '<form class="add" id="f"><input id="q" placeholder="Type a town, e.g. Tanuku" autocomplete="off" required>'
-        + '<button id="go">Find</button></form><div id="prog" class="hidden"></div>'
+        + '<button id="go">Find</button></form>'
+        + '<form class="add hidden" id="pwf"><input id="pw" type="password" placeholder="Password to add new towns" autocomplete="current-password"></form><div id="prog" class="hidden"></div>'
         + f'<h2>Towns</h2><div class="towns">{links}</div>'
         + ADD_SCRIPT.replace("WORKER_URL", WORKER_URL) + "</body></html>")
 
@@ -103,13 +104,20 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const show=(t,msg,steps)=>{P.classList.remove('hidden');P.innerHTML='<div class="t">'+t+'</div>'+(msg?'<div class="msg">'+msg+'</div>':'')+(steps||'')};
 const slugOf=t=>t.trim().split(/\\s+/).join('_').toLowerCase();
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const PW=document.getElementById('pw'), PWF=document.getElementById('pwf');
+const savedPw=()=>{try{return localStorage.getItem('rf_pw')||''}catch(e){return ''}};
+const savePw=v=>{try{v?localStorage.setItem('rf_pw',v):localStorage.removeItem('rf_pw')}catch(e){}};
 document.getElementById('f').onsubmit=async e=>{
  e.preventDefault(); const town=document.getElementById('q').value.trim(); if(!town)return;
  const have=await fetch('towns.json?'+Date.now()).then(r=>r.json()).catch(()=>[]);
  const hit=have.find(t=>t.slug===slugOf(town)); if(hit){location.href=hit.slug+'/';return}
+ const password=PW.value||savedPw();
+ if(!password){PWF.classList.remove('hidden');PW.focus();show(esc(town)+' is new','Enter the password to add it.');return}
  B.disabled=true; show('Starting search for '+esc(town)+'…');
  try{
-  const r=await fetch(W+'/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({town})}).then(r=>r.json());
+  const r=await fetch(W+'/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({town,password})}).then(r=>r.json());
+  if(r.badPassword){savePw('');PW.value='';PWF.classList.remove('hidden');PW.focus();show('Wrong password','Please check it and try again.');B.disabled=false;return}
+  savePw(password);PWF.classList.add('hidden');
   if(r.error){show('Could not search',esc(r.error));B.disabled=false;return}
   if(r.exists){location.href=r.slug+'/';return}
   const t0=Date.now();
