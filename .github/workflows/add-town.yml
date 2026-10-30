@@ -1,0 +1,65 @@
+name: Add town
+run-name: Add ${{ inputs.town }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      town:
+        description: Town name, e.g. Tanuku
+        required: true
+
+# One town at a time; a second request waits instead of running in parallel
+concurrency:
+  group: add-town
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Get code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install packages
+        run: pip install requests openpyxl
+
+      - name: Check town name
+        env:
+          TOWN: ${{ inputs.town }}
+        run: |
+          python3 - <<'PY'
+          import os, re, sys
+          town = os.environ["TOWN"].strip()
+          if not re.fullmatch(r"[A-Za-z][A-Za-z .'-]{1,39}", town):
+              sys.exit(f"Invalid town name: {town!r}")
+          name = " ".join(w.capitalize() for w in town.split())
+          if os.path.exists(f"results/{name.replace(' ', '_')}_top_rated.xlsx"):
+              sys.exit(f"{name} is already on the site")
+          with open(os.environ["GITHUB_ENV"], "a") as f:
+              f.write(f"TOWN_NAME={name}\n")
+          PY
+
+      - name: Search Google Maps
+        env:
+          PLACES_API_KEY: ${{ secrets.PLACES_API_KEY }}
+        run: python3 -u places_api.py "$TOWN_NAME"
+
+      - name: Build website
+        run: python3 build_site.py
+
+      - name: Publish
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results docs
+          git commit -m "Add $TOWN_NAME"
+          git push

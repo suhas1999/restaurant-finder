@@ -1,0 +1,9 @@
+name = "restaurant-finder"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+[vars]
+REPO = "suhas1999/restaurant-finder"
+ALLOWED_ORIGIN = "https://suhas1999.github.io"
+SITE_URL = "https://suhas1999.github.io/restaurant-finder"
+DAILY_LIMIT = "5"

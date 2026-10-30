@@ -23,6 +23,7 @@ TOP_N = 50          # restaurants kept per list per town
 MIN_RATING = 4.0    # "Most Popular" list only includes places rated at least this
 PAD_KM = 1.0        # widen Google's town box by this much on each side (its boxes are tight)
 MIN_TILE_KM = 1.5   # stop splitting an area once it is this small
+MAX_REQUESTS = int(os.environ.get("MAX_REQUESTS", 400))  # hard cap on billed API calls per run
 STATE = "Andhra Pradesh"
 
 # Each query returns at most 60 places, so several phrasings widen coverage; results are deduped by place id
@@ -60,11 +61,18 @@ def load_key():
     return key
 
 
+requests_made = 0
+
+
 def search(key, body, fields=FIELDS):
     """Run one Text Search, following nextPageToken (max 3 pages / 60 places)."""
     headers = {"X-Goog-Api-Key": key, "X-Goog-FieldMask": fields}
+    global requests_made
     places, body = [], dict(body)
     for _ in range(3):
+        if requests_made >= MAX_REQUESTS:
+            raise RuntimeError(f"Stopped: reached MAX_REQUESTS={MAX_REQUESTS} API calls for this run")
+        requests_made += 1
         # 403s can come and go for a while after billing/API changes propagate; 429/5xx are transient too
         for attempt in range(6):
             r = requests.post(SEARCH_URL, json=body, headers=headers, timeout=30)
@@ -199,6 +207,8 @@ def save(rows, path, title):
 def run(key, town):
     print(f"\n=== {town} ===")
     rows = collect(key, town)
+    if not rows:
+        sys.exit(f"No restaurants found for {town}")
     add_scores(rows)
     top_rated = sorted(rows, key=lambda r: r["Score"], reverse=True)[:TOP_N]
     popular = sorted((r for r in rows if (r["Rating"] or 0) >= MIN_RATING),
@@ -207,6 +217,7 @@ def run(key, town):
     name = town.replace(" ", "_")
     save(top_rated, RESULTS / f"{name}_top_rated.xlsx", "Top Rated")
     save(popular, RESULTS / f"{name}_most_popular.xlsx", "Most Popular")
+    print(f"Google API calls used: {requests_made}")
     print(f"Saved {len(top_rated)} top rated + {len(popular)} most popular to {RESULTS}/")
     return top_rated, popular
 
