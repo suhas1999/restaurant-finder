@@ -26,7 +26,7 @@ li{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box
 .meta{color:var(--muted);font-size:14px;margin-top:2px}.stars{color:var(--star);font-weight:700}
 .addr{color:var(--muted);font-size:14px;margin-top:6px}
 .btns{display:flex;gap:8px;margin-top:10px}.btns a{flex:1;text-align:center;padding:10px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;border:1px solid var(--line);color:var(--text)}
-.btns a.map{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btns a.none{color:var(--muted);font-weight:400}.btns a{white-space:nowrap}.btns a.map{background:var(--accent);color:#fff;border-color:var(--accent)}
 .towns a{display:block;margin:12px 16px;padding:18px;background:var(--card);border-radius:14px;text-decoration:none;color:var(--text);font-size:20px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .hidden{display:none}
 """
@@ -44,8 +44,8 @@ def card(r):
     e = lambda v: html.escape(str(v or ""))
     rating = f'<span class="stars">★ {r["Rating"]}</span> · {int(r["Reviews"] or 0):,} reviews' if r["Rating"] else "No rating"
     km = f' · {r["Km from Centre"]} km' if r.get("Km from Centre") is not None else ""
-    phone = str(r["Phone"] or "").replace(" ", "")
-    call = f'<a href="tel:{e(phone)}">📞 Call</a>' if phone else ""
+    phone = str(r["Phone"] or "").strip()
+    call = f'<a href="tel:{e(phone.replace(" ", ""))}">📞 {e(phone)}</a>' if phone else '<a class="none">No phone listed</a>'
     return (f'<li><div class="rank">{r["Rank"]}</div><div class="body"><div class="name">{e(r["Restaurant Name"])}</div>'
             f'<div class="meta">{rating}</div><div class="meta">{e(r["Category"])}{km}</div>'
             f'<div class="addr">{e(r["Address"])}</div>'
