@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Restaurant Finder</title><style>
+:root{--bg:#f6f4ef;--card:#fff;--text:#1d1d1f;--muted:#6b6b70;--accent:#c2410c;--star:#f59e0b;--line:#e7e3da}
+@media (prefers-color-scheme:dark){:root{--bg:#121212;--card:#1e1e1e;--text:#f2f2f2;--muted:#a0a0a5;--accent:#fb923c;--line:#2c2c2c}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:17px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif}
+header{padding:20px 16px 8px}h1{margin:0;font-size:26px}header p{margin:4px 0 0;color:var(--muted);font-size:15px}
+.tabs{position:sticky;top:0;z-index:2;display:flex;gap:8px;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+.tabs button{flex:1;padding:12px;border:0;border-radius:12px;font-size:16px;font-weight:600;background:var(--card);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tabs button.on{background:var(--accent);color:#fff}
+.note{margin:12px 16px 0;color:var(--muted);font-size:14px}
+ol{list-style:none;margin:0;padding:12px 16px 40px}
+li{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;gap:12px}
+.rank{flex:none;width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;display:grid;place-items:center;font-size:15px}
+.body{min-width:0;flex:1}.name{font-weight:700;font-size:18px;overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:14px;margin-top:2px}.stars{color:var(--star);font-weight:700}
+.addr{color:var(--muted);font-size:14px;margin-top:6px}
+.btns{display:flex;gap:8px;margin-top:10px}.btns a{flex:1;text-align:center;padding:10px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;border:1px solid var(--line);color:var(--text)}
+.btns a.map{background:var(--accent);color:#fff;border-color:var(--accent)}
+.towns a{display:block;margin:12px 16px;padding:18px;background:var(--card);border-radius:14px;text-decoration:none;color:var(--text);font-size:20px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.hidden{display:none}
+</style></head><body><header><h1>🍽️ Restaurant Finder</h1><p>Pick a town</p></header><div class="towns"><a href="bhimavaram/">Bhimavaram →</a><a href="kakinada/">Kakinada →</a></div></body></html>

@@ -1,0 +1,6 @@
+api_key.txt
+__pycache__/
+~$*
+results/*_log.txt
+scraper_log.txt
+.DS_Store
