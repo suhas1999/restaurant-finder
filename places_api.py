@@ -23,6 +23,7 @@ TOP_N = 50          # restaurants kept per list per town
 MIN_RATING = 4.0    # "Most Popular" list only includes places rated at least this
 PAD_KM = 1.0        # widen Google's town box by this much on each side (its boxes are tight)
 MIN_TILE_KM = 1.5   # stop splitting an area once it is this small
+MAX_BOX_KM = 20     # Google sometimes returns a district-sized box (Vijayawada: 73 x 89 km); clamp around the centre
 MAX_REQUESTS = int(os.environ.get("MAX_REQUESTS", 400))  # hard cap on billed API calls per run
 STATE = "Andhra Pradesh"
 
@@ -64,6 +65,10 @@ def load_key():
 requests_made = 0
 
 
+class OutOfRequests(Exception):
+    pass
+
+
 def search(key, body, fields=FIELDS):
     """Run one Text Search, following nextPageToken (max 3 pages / 60 places)."""
     headers = {"X-Goog-Api-Key": key, "X-Goog-FieldMask": fields}
@@ -71,7 +76,7 @@ def search(key, body, fields=FIELDS):
     places, body = [], dict(body)
     for _ in range(3):
         if requests_made >= MAX_REQUESTS:
-            raise RuntimeError(f"Stopped: reached MAX_REQUESTS={MAX_REQUESTS} API calls for this run")
+            raise OutOfRequests
         requests_made += 1
         # 403s can come and go for a while after billing/API changes propagate; 429/5xx are transient too
         for attempt in range(6):
@@ -102,6 +107,10 @@ def town_area(key, town):
     dlng = PAD_KM / (111 * math.cos(math.radians(loc["latitude"])))
     box = (vp["low"]["latitude"] - dlat, vp["low"]["longitude"] - dlng,
            vp["high"]["latitude"] + dlat, vp["high"]["longitude"] + dlng)
+    half_lat = MAX_BOX_KM / 2 / 111
+    half_lng = MAX_BOX_KM / 2 / (111 * math.cos(math.radians(loc["latitude"])))
+    box = (max(box[0], loc["latitude"] - half_lat), max(box[1], loc["longitude"] - half_lng),
+           min(box[2], loc["latitude"] + half_lat), min(box[3], loc["longitude"] + half_lng))
     print(f"{town}: centre {loc['latitude']:.4f},{loc['longitude']:.4f}, search box "
           f"{box_km(box)[0]:.1f} x {box_km(box)[1]:.1f} km ({hits[0]['formattedAddress']})")
     return loc["latitude"], loc["longitude"], box
@@ -141,7 +150,11 @@ def collect(key, town):
     lat, lng, box = town_area(key, town)
     found = {}
     for q in QUERIES:
-        hits = search_area(key, q, box)
+        try:
+            hits = search_area(key, q, box)
+        except OutOfRequests:
+            print(f"  Reached MAX_REQUESTS={MAX_REQUESTS}; ranking the {len(found)} places found so far")
+            break
         new = 0
         for p in hits:
             if p["id"] in found or p.get("businessStatus", "OPERATIONAL") != "OPERATIONAL":
